@@ -1,0 +1,49 @@
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data:/data/db
+    networks:
+      - vtv-network
+
+  scrapy:
+    build:
+      context: vtv-scrapy
+      dockerfile: vtv-scrapy.Dockerfile
+    container_name: scrapy
+    ports:
+      - "6800:6800"
+    depends_on:
+      - mongodb
+    environment:
+      MONGO_URI: "mongodb://mongodb:27017/vtv_news_db_dev"
+      MONGO_DB: "vtv_news_db_dev"
+      STORING_COLLECTION: "thegioi_news"
+      SCRAPY_MODE: "dev"
+      INTERVAL: 300
+    networks:
+      - vtv-network
+
+  fastapi:
+    build:
+      context: fast-api
+      dockerfile: Dockerfile
+    container_name: fast-api
+    ports:
+      - "8000:80"
+    environment:
+      MONGO_URI: "mongodb://mongodb:27017/vtv_news_db_dev"
+      MONGO_DB: "vtv_news_db_dev"
+      STORING_COLLECTION: "thegioi_news"
+    depends_on:
+      - mongodb
+    networks:
+      - vtv-network
+
+networks:
+  vtv-network:
+    driver: bridge
